@@ -10,6 +10,8 @@ OBJS = \
 	module_bep_bem_helper.o        \
 	module_bl_gwdo.o               \
 	module_bl_mynn.o               \
+	module_bl_mynn_common.o        \
+        module_bl_mynn_wrapper.o       \
 	module_bl_ysu.o                \
 	module_bl_myjpbl.o             \
 	module_cam_error_function.o    \
@@ -53,7 +55,11 @@ physics_wrf: $(OBJS)
 
 # DEPENDENCIES:
 module_bl_mynn.o: \
-	module_cam_error_function.o
+	module_cam_error_function.o \
+	module_bl_mynn_common.o	
+
+module_bl_mynn_wrapper.o: \
+	module_bl_mynn.o
 
 module_cam_support.o: \
 	module_cam_shr_kind_mod.o

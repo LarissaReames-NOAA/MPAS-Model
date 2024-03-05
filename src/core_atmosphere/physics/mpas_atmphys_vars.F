@@ -408,9 +408,28 @@
  logical,parameter:: bl_mynn_tkeadvect = .false.!
  integer,parameter:: bl_mynn_tkebudget = 0      !
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
+ integer,parameter:: icloud_bl = 0     !
+ integer,parameter:: bl_mynn_cloudmix = 0     !
+ integer,parameter:: bl_mynn_mixlength = 1
+ integer,parameter:: bl_mynn_edmf = 1     !
+ integer,parameter:: bl_mynn_edmf_mom = 1     !
+ integer,parameter:: bl_mynn_edmf_tke = 0     !
+ integer,parameter:: bl_mynn_output = 0     !
+ integer,parameter:: bl_mynn_mixscalars = 0     !
+ integer,parameter:: bl_mynn_mixqt = 0
+ logical,parameter:: flag_qnwfa = .false.
+ logical,parameter:: flag_qnifa = .false.
+ logical,parameter:: flag_qnbca = .false.
+ real,parameter   :: bl_mynn_closure = 2.5
+ integer,parameter:: spp_pbl = 0
+ 
+ integer, dimension(:,:), allocatable:: &
+    nupdraft_p,         &
+    ktop_plume_p
 
- real(kind=RKIND),dimension(:,:),allocatable:: &
-    vdfg_p             !
+real(kind=RKIND),dimension(:,:),allocatable:: &
+    vdfg_p,             &
+    maxmf_p             !
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     dqke_p,           &!
@@ -420,10 +439,20 @@
     qkeadv_p,         &!
     qshear_p,         &!
     qwt_p,            &!
-    tkepbl_p           !
+    tkepbl_p,         &
+    sm3d_p,             &!stability function for momentum
+    exch_h_p,           &!exchange coefficient for heat                                                    [K s-1]
+    exch_m_p,           &!exchange coefficient for momentum                                                [K s-1]
+    qc_bl_p,            &
+    qi_bl_p,            &
+    cldfra_bl_p
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
-    rniblten_p         !
+    rniblten_p,         &        !
+    rqncblten_p,        &!Qni tendency due to PBL parameterization                                    [# kg-1 s-1]
+    rqnwfablten_p,      &
+    rqnifablten_p,      &
+    rqnbcablten_p
 
 !... MYJ PBL scheme (module_bl_myjpbl.F):
  real(kind=RKIND),dimension(:,:),allocatable:: &
@@ -825,13 +854,13 @@
     acrunoff_p,         &!run total accumulated runoff                                                    [kg m-2]
     snowfallac_p,       &!run total accumulated snowfall taking in to account melting                         [mm] 
     sfcexc_p,           &!Surface exhcange coefficient for heat                                            [m s-1]
-    sfcevp_p             !total evaporation                                                               [kg m-2]
-
+    sfcevp_p            !total evaporation                                                               [kg m-2]
+    
  real(kind=RKIND), dimension(:,:,:), allocatable:: &
     smfr3d_p ,          &!fraction of frozen soil moisture                                                     [-]
     landusef_p,         &!fraction of each landuse category                                                    [-]
     soilf_p,            &!fraction of each soil category                                                       [-]
-    keepfr3d_p           !flag to keep frozen soil moisture information
+    keepfr3d_p          !flag to keep frozen soil moisture information
 
 !=================================================================================================================
 !.. variables and arrays related to surface characteristics:

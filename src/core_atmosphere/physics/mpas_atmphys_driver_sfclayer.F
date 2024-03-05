@@ -1419,7 +1419,7 @@
                    isfflx   = isfflx     , dx       = dx_p       , svp1     = svp1       , &
                    svp2     = svp2       , svp3     = svp3       , svpt0    = svpt0      , &
                    ep1      = ep_1       , ep2      = ep_2       , karman   = karman     , &
-                   eomeg    = eomeg      , stbolt   = stbolt     , P1000mb  = P0         , &
+                   eomeg    = eomeg      , stbolt   = stbolt     , P1000mb  = P0         , & 
                    ustm     = ustm_p     , ck       = ck_p       , cka      = cka_p      , &
                    cd       = cd_p       , cda      = cda_p      , isftcflx = isftcflx   , &
                    iz0tlnd  = iz0tlnd    , scm_force_flux = scm_force_flux               , &
@@ -1532,9 +1532,9 @@
        call mpas_timer_start('sf_mynn')
        call mpas_log_write('--- enter subroutine sfclay_mynn:')
        call sfclay_mynn( &
-                   p3d      = pres_hyd_p , pi3d     = pi_p       , psfcpa    = psfc_p     , &
+                   p3d      = pres_hyd_p , psfcpa    = psfc_p     , &
                    th3d     = th_p       , t3d      = t_p        , u3d       = u_p        , &
-                   v3d      = v_p        , qv3d     = qv_p       , qc3d      = qc_p       , &
+                   v3d      = v_p        , qv3d     = qv_p       ,  &
                    rho3d    = rho_p      , dz8w     = dz_p       , cp        = cp         , &
                    g        = gravity    , rovcp    = rcp        , R         = R_d        , &
                    xlv      = xlv        , chs      = chs_p      , chs2      = chs2_p     , &
@@ -1550,13 +1550,11 @@
                    gz1oz0   = gz1oz0_p   , wspd     = wspd_p     , br        = br_p       , &
                    isfflx   = isfflx     , dx       = dx         , svp1      = svp1       , &
                    svp2     = svp2       , svp3     = svp3       , svpt0     = svpt0      , &
-                   ep1      = ep_1       , ep2      = ep_2       , karman    = karman     , &
-                   dxCell   = dx_p       , ustm     = ustm_p     , ck        = ck_p       , &
+                   karman   = karman     , ep1      = ep_1       , ep2       = ep_2       , &
+                   dx2d     = dx_p       , ustm     = ustm_p     , ck        = ck_p       , &
                    cka      = cka_p      , cd       = cd_p       , cda       = cda_p      , &
                    isftcflx = isftcflx   , iz0tlnd  = iz0tlnd    , itimestep = initflag   , &
-                   ch       = ch_p       , cov      = cov_p      , tsq       = tsq_p      , &
-                   qsq      = qsq_p      , sh3d     = sh3d_p     , el_pbl    = elpbl_p    , &
-                   qcg      = qcg_p      , bl_mynn_cloudpdf = bl_mynn_cloudpdf            , &
+                   ch       = ch_p       ,  spp_pbl = 0          , qcg       = qcg_p      , &
                    ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde  , &
                    ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                    its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
@@ -1564,9 +1562,9 @@
 
        if(config_frac_seaice) then
           call sfclay_mynn( &
-                      p3d      = pres_hyd_p , pi3d     = pi_p       , psfcpa    = psfc_p     , &
+                      p3d      = pres_hyd_p , psfcpa    = psfc_p     , &
                       th3d     = th_p       , t3d      = t_p        , u3d       = u_p        , &
-                      v3d      = v_p        , qv3d     = qv_p       , qc3d      = qc_p       , &
+                      v3d      = v_p        , qv3d     = qv_p       , &
                       rho3d    = rho_p      , dz8w     = dz_p       , cp        = cp         , &
                       g        = gravity    , rovcp    = rcp        , R         = R_d        , &
                       xlv      = xlv        , chs      = chs_sea    , chs2      = chs2_sea   , &
@@ -1583,12 +1581,10 @@
                       isfflx   = isfflx     , dx       = dx         , svp1      = svp1       , &
                       svp2     = svp2       , svp3     = svp3       , svpt0     = svpt0      , &
                       ep1      = ep_1       , ep2      = ep_2       , karman    = karman     , &
-                      dxCell   = dx_p       , ustm     = ustm_sea   , ck        = ck_sea     , &
+                      dx2d     = dx_p       , ustm     = ustm_sea   , ck        = ck_sea     , &
                       cka      = cka_sea    , cd       = cd_sea     , cda       = cda_sea    , &
                       isftcflx = isftcflx   , iz0tlnd  = iz0tlnd    , itimestep = initflag   , &
-                      ch       = ch_sea     , cov      = cov_p      , tsq       = tsq_p      , &
-                      qsq      = qsq_p      , sh3d     = sh3d_p     , el_pbl    = elpbl_p    , &
-                      qcg      = qcg_p      , bl_mynn_cloudpdf = bl_mynn_cloudpdf            , &
+                      ch       = ch_sea     , spp_pbl  = 0          , qcg       = qcg_p      ,  &
                       ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde  , &
                       ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme  , &
                       its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    &
