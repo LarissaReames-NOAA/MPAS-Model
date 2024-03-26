@@ -323,12 +323,18 @@
        call mpas_pool_get_dimension(state,'index_ni',index_ni)
        call mpas_pool_get_dimension(state,'index_nc',index_nc)
        ni => scalars(index_ni,:,:)
-       nc => scalars(index_nc,:,:)
+       if (index_nc>0) then
+          nc => scalars(index_nc,:,:)
+       endif
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
           ni_p(i,k,j) = max(0.,ni(k,i))
-          nc_p(i,k,j) = max(0.,nc(k,i))
+          if (index_nc>0) then
+             nc_p(i,k,j) = max(0.,nc(k,i))
+          else
+             nc_p(i,k,j) = 0.0
+          endif
        enddo
        enddo
        enddo
