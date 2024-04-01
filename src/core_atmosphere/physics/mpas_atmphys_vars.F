@@ -408,7 +408,6 @@
  logical,parameter:: bl_mynn_tkeadvect = .false.!
  integer,parameter:: bl_mynn_tkebudget = 0      !
  integer,parameter:: bl_mynn_cloudpdf  = 0      !
- integer,parameter:: icloud_bl = 0     !
  integer,parameter:: bl_mynn_cloudmix = 0     !
  integer,parameter:: bl_mynn_mixlength = 1
  integer,parameter:: bl_mynn_edmf = 1     !
@@ -449,7 +448,7 @@ real(kind=RKIND),dimension(:,:),allocatable:: &
 
  real(kind=RKIND),dimension(:,:,:),allocatable:: &
     rniblten_p,         &        !
-    rqncblten_p,        &!Qni tendency due to PBL parameterization                                    [# kg-1 s-1]
+    rqncblten_p,        &!Qnc tendency due to PBL parameterization                                    [# kg-1 s-1]
     rqnwfablten_p,      &
     rqnifablten_p,      &
     rqnbcablten_p

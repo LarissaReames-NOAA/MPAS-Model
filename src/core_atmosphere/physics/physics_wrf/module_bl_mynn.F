@@ -250,7 +250,7 @@ MODULE module_bl_mynn
         onethird  , twothirds , tkmin      , t0c       , &
         tice      , kind_phys
 
-
+   use IEEE_ARITHMETIC
   IMPLICIT NONE
 
 !===================================================================
@@ -329,7 +329,7 @@ MODULE module_bl_mynn
 
   !option to print out more stuff for debugging purposes
   LOGICAL, PARAMETER :: debug_code = .false.
-  INTEGER, PARAMETER :: idbg = 23 !specific i-point to write out
+  INTEGER, PARAMETER :: idbg = 494344 !specific i-point to write out
 
 ! JAYMES-
 !> Constants used for empirical calculations of saturation
@@ -423,7 +423,7 @@ CONTAINS
        &FLAG_QNBCA,                     &
        &IDS,IDE,JDS,JDE,KDS,KDE,        &
        &IMS,IME,JMS,JME,KMS,KME,        &
-       &ITS,ITE,JTS,JTE,KTS,KTE         )
+       &ITS,ITE,JTS,JTE,KTS,KTE        ) 
     
 !-------------------------------------------------------------------
 
@@ -464,7 +464,6 @@ CONTAINS
 !       closure       : <= 2.5;  Level 2.5
 !                  2.5< and <3;  Level 2.6
 !                        =   3;  Level 3
-    
     REAL, INTENT(in) :: delt
     REAL, DIMENSION(IMS:IME), INTENT(in) :: dx
     REAL, DIMENSION(IMS:IME,KMS:KME), INTENT(in) :: dz,      &
@@ -863,7 +862,8 @@ CONTAINS
              ENDIF
 
 !***  Begin debugging
-!             IF(I==IMD .AND. J==JMD)THEN
+!             IF(GLOBALIDS(I)==idbg)THEN
+!               k=kts
 !               PRINT*,"MYNN DRIVER INIT: k=",1," sh=",sh(k)
 !               PRINT*," sqw=",sqw(k)," thl=",thl(k)," k_m=",exch_m(i,k)
 !               PRINT*," xland=",xland(i)," rmol=",rmol(i)," ust=",ust(i)
@@ -1303,7 +1303,9 @@ CONTAINS
           else
              diss_heat(1:kte) = 0.
           endif
-
+          !if (ps(i) < p1(kts)) then
+          !      print*, GLOBALIDS(i), ps(i), p1(kts)
+          !endif
 !>  - Call mynn_tendencies() to solve for tendencies of 
 !! \f$U, V, \theta, q_{v}, q_{c}, and q_{i}\f$.
           CALL mynn_tendencies(kts,kte,i,        &
@@ -1479,12 +1481,13 @@ CONTAINS
           ENDIF
 
           !***  Begin debug prints
-          IF ( debug_code .and. (i .eq. idbg)) THEN
+!          IF ( debug_code .and. (GLOBALIDS(i) .eq. idbg)) THEN
+           IF  ( debug_code .and. (i .eq. idbg)) THEN
              IF ( ABS(QFX(i))>.001)print*,&
                 "SUSPICIOUS VALUES AT: i=",i," QFX=",QFX(i)
              IF ( ABS(HFX(i))>1100.)print*,&
                 "SUSPICIOUS VALUES AT: i=",i," HFX=",HFX(i)
-             DO k = kts,kte
+             DO k = kts,kts+1
                IF ( sh(k) < 0. .OR. sh(k)> 200.)print*,&
                   "SUSPICIOUS VALUES AT: i,k=",i,k," sh=",sh(k)
                IF ( ABS(vt(k)) > 2.0 )print*,&
@@ -1504,12 +1507,12 @@ CONTAINS
                ENDIF
 
                !IF (I==IMD .AND. J==JMD) THEN
-               !   PRINT*,"MYNN DRIVER END: k=",k," sh=",sh(k)
-               !   PRINT*," sqw=",sqw(k)," thl=",thl(k)," exch_m=",exch_m(i,k)
-               !   PRINT*," xland=",xland(i)," rmol=",rmol(i)," ust=",ust(i)
-               !   PRINT*," qke=",qke(i,k)," el=",el_pbl(i,k)," tsq=",tsq(i,k)
-               !   PRINT*," PBLH=",PBLH(i)," u=",u(i,k)," v=",v(i,k)
-               !   PRINT*," vq=",vq(k)," vt=",vt(k)
+                  PRINT*,"MYNN DRIVER END: k=",k," sh=",sh(k)
+                  PRINT*," sqw=",sqw(k)," thl=",thl(k)," exch_m=",exch_m(i,k)
+                  PRINT*," xland=",xland(i)," rmol=",rmol(i)," ust=",ust(i)
+                  PRINT*," qke=",qke(i,k)," el=",el_pbl(i,k)," tsq=",tsq(i,k)
+                  PRINT*," PBLH=",PBLH(i)," u=",u(i,k)," v=",v(i,k)
+                  PRINT*," vq=",vq(k)," vt=",vt(k)
                !ENDIF
              ENDDO !end-k
           ENDIF
@@ -4175,8 +4178,8 @@ CONTAINS
 !    REAL, INTENT(IN) :: gradu_top,gradv_top,gradth_top,gradqv_top
 
 !local vars
-
-    REAL, DIMENSION(kts:kte) :: dtz,dfhc,dfmc,delp
+    DOUBLE PRECISION, DIMENSION(KTS:KTE) ::      DELP
+    REAL, DIMENSION(kts:kte) :: dtz,dfhc,dfmc
     REAL, DIMENSION(kts:kte) :: sqv2,sqc2,sqi2,sqw2,qni2,qnc2, & !AFTER MIXING
                                 qnwfa2,qnifa2,qnbca2,ozone2
     REAL, DIMENSION(kts:kte) :: zfac,plumeKh,rhoinv
@@ -4213,6 +4216,9 @@ CONTAINS
     khdz(kts)  =rhoz(kts)*dfh(kts)
     kmdz(kts)  =rhoz(kts)*dfm(kts)
     delp(kts)  = psfc - (p(kts+1)*dz(kts) + p(kts)*dz(kts+1))/(dz(kts)+dz(kts+1))
+!    if (delp(kts) == 0.0) then
+!       print*, 'DELP==0 ',delp(kts), psfc, p(kts), p(kts+1), dz(kts), dz(kts+1)
+!    endif
     DO k=kts+1,kte
        dtz(k)   =delt/dz(k)
        rhoz(k)  =(rho(k)*dz(k-1) + rho(k-1)*dz(k))/(dz(k-1)+dz(k))
@@ -5188,7 +5194,8 @@ ENDIF
     implicit none
     integer,  intent(in)     :: kte
     real, intent(in)         :: delt
-    real, dimension(kte), intent(in)     :: dp, exner
+    double precision, dimension(kte), intent(in) :: dp
+    real, dimension(kte), intent(in)     :: exner
     real, dimension(kte), intent(inout)  :: qv, qc, qi, th
     real, dimension(kte), intent(inout)  :: dqv, dqc, dqi, dth
     integer   k
@@ -5197,6 +5204,7 @@ ENDIF
                        qcmin = 0.0,     &
                        qimin = 0.0
 
+!    if(minval(abs(dp))<5.0) print*, 'min,max dp', minval(abs(dp)), maxval(dp) 
     do k = kte, 1, -1  ! From the top to the surface
        dqc2 = max(0.0, qcmin-qc(k)) !qc deficit (>=0)
        dqi2 = max(0.0, qimin-qi(k)) !qi deficit (>=0)
@@ -5219,8 +5227,19 @@ ENDIF
        dqv(k) = dqv(k) + dqv2/delt
        qv(k)  = qv(k)  + dqv2
        if( k .ne. 1 ) then
-           qv(k-1)   = qv(k-1)  - dqv2*dp(k)/dp(k-1)
-           dqv(k-1)  = dqv(k-1) - dqv2*dp(k)/dp(k-1)/delt
+!           if (ieee_is_nan(dp(k))) print*, 'nan dp (k)', k
+           if (dp(k-1)==0.0) then
+                print*, 'zero dp(k)', k
+                dum = 0.02
+           else
+                dum = dp(k-1)
+           endif
+!           if (ieee_is_nan(dp(k-1))) print*, 'nan dp (k-1)', k
+!           if (ieee_is_nan(dqv2)) print*, 'nan dqv2', k
+!           if (ieee_is_nan(dqv(k-1))) print*, 'nan dqv(k-1)', k
+          
+           qv(k-1)   = qv(k-1)  - dqv2*dp(k)/dum
+           dqv(k-1)  = dqv(k-1) - dqv2*dp(k)/dum/delt
        endif
        qv(k) = max(qv(k),qvmin)
        qc(k) = max(qc(k),qcmin)

@@ -58,8 +58,15 @@
 
 
 !=================================================================================================================
- subroutine allocate_cloudiness
+ subroutine allocate_cloudiness(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in)   :: configs
+!local pointer:
+ character(len=StrKIND),pointer:: radt_cld_scheme
+
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
  if(.not.allocated(dx_p)     ) allocate(dx_p(ims:ime,jms:jme)             ) 
  if(.not.allocated(xland_p)  ) allocate(xland_p(ims:ime,jms:jme)          )
@@ -69,11 +76,28 @@
  if(.not.allocated(qirad_p)  ) allocate(qirad_p(ims:ime,kms:kme,jms:jme)  )
  if(.not.allocated(qsrad_p)  ) allocate(qsrad_p(ims:ime,kms:kme,jms:jme)  )
 
+ cld_fraction_select: select case (trim(radt_cld_scheme))
+
+    case("cld_fraction_mynn")
+
+       if(.not.allocated(qi_bl_p)) allocate(qi_bl_p(ims:ime,kms:kme,jms:jme))
+       if(.not.allocated(qc_bl_p)) allocate(qc_bl_p(ims:ime,kms:kme,jms:jme))
+    case default
+
+ end select cld_fraction_select
+
  end subroutine allocate_cloudiness
 
 !=================================================================================================================
- subroutine deallocate_cloudiness
+ subroutine deallocate_cloudiness(configs)
 !=================================================================================================================
+
+!input arguments:
+ type(mpas_pool_type),intent(in)   :: configs
+!local pointer:
+ character(len=StrKIND),pointer:: radt_cld_scheme
+
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
  if(allocated(dx_p)     ) deallocate(dx_p     )
  if(allocated(xland_p)  ) deallocate(xland_p  )
@@ -83,14 +107,26 @@
  if(allocated(qirad_p)  ) deallocate(qirad_p  )
  if(allocated(qsrad_p)  ) deallocate(qsrad_p  )
 
+ cld_fraction_select: select case (trim(radt_cld_scheme))
+
+    case("cld_fraction_mynn")
+
+       if(allocated(qi_bl_p)) deallocate(qi_bl_p)
+       if(allocated(qc_bl_p)) deallocate(qc_bl_p)
+    case default
+
+ end select cld_fraction_select
+
+
  end subroutine deallocate_cloudiness
 
 !=================================================================================================================
- subroutine cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
+ subroutine cloudiness_from_MPAS(itimestep,configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
 !input arguments:
  integer,intent(in):: its,ite
+ integer,intent(in):: itimestep
 
 !input and inout arguments:
  type(mpas_pool_type),intent(in)   :: configs
@@ -107,6 +143,10 @@
  real(kind=RKIND),dimension(:),pointer:: areaCell,meshDensity
  real(kind=RKIND),dimension(:),pointer:: xland
 
+ real(kind=RKIND),dimension(:,:),pointer:: cldfra_bl,qi_bl,qc_bl
+
+ character(len=StrKIND),pointer:: radt_cld_scheme
+
 !-----------------------------------------------------------------------------------------------------------------
 
  call mpas_pool_get_config(configs,'config_len_disp',len_disp)
@@ -115,6 +155,7 @@
  call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
 
  call mpas_pool_get_array(sfc_input,'xland',xland)
+ call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
  do j = jts,jte
     do i = its,ite
@@ -134,6 +175,35 @@
     enddo
     enddo
  enddo
+
+ cld_fraction_select: select case (trim(radt_cld_scheme))
+ 
+    case("cld_fraction_mynn")
+       call mpas_pool_get_array(diag_physics,'cldfra_bl',cldfra_bl)
+       call mpas_pool_get_array(diag_physics,'qi_bl',qi_bl)
+       call mpas_pool_get_array(diag_physics,'qc_bl',qc_bl)
+       if(itimestep > 0) then
+          do j = jts,jte
+          do k = kts,kte
+          do i = its,ite
+             cldfrac_p(i,k,j) = cldfra_bl(k,i)
+          enddo
+          enddo
+          enddo
+       endif
+
+       do j = jts,jte
+       do k = kts,kte
+       do i = its,ite
+          qc_bl_p(i,k,j) = qc_bl(k,i)
+          qi_bl_p(i,k,j) = qi_bl(k,i)
+       enddo
+       enddo
+       enddo
+
+    case default
+ end select cld_fraction_select  
+ 
 
  end subroutine cloudiness_from_MPAS
 
@@ -167,7 +237,7 @@
  end subroutine cloudiness_to_MPAS
 
 !=================================================================================================================
- subroutine driver_cloudiness(configs,mesh,diag_physics,sfc_input,its,ite)
+ subroutine driver_cloudiness(itimestep,configs,mesh,diag_physics,sfc_input,its,ite)
 !=================================================================================================================
 
 !input arguments:
@@ -176,6 +246,7 @@
  type(mpas_pool_type),intent(in)   :: sfc_input
 
  integer,intent(in):: its,ite
+ integer,intent(in):: itimestep
 
 !inout arguments:
  type(mpas_pool_type),intent(inout):: diag_physics
@@ -192,7 +263,7 @@
  call mpas_pool_get_config(configs,'config_radt_cld_scheme',radt_cld_scheme)
 
 !copy MPAS arrays to local arrays:
- call cloudiness_from_MPAS(configs,mesh,diag_physics,sfc_input,its,ite)
+ call cloudiness_from_MPAS(itimestep,configs,mesh,diag_physics,sfc_input,its,ite)
 
  cld_fraction_select: select case (trim(radt_cld_scheme))
     case("cld_incidence")
@@ -217,6 +288,11 @@
            its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
                       )
       call mpas_timer_stop('cal_cldfra3')
+
+    case("cld_fraction_mynn")
+      call mpas_timer_start('cal_mynncld')
+      call cal_mynncld(cldfrac_p,qcrad_p,qirad_p,qc_bl_p,qi_bl_p,its,ite,jts,jte,kts,kte)
+      call mpas_timer_stop('cal_mynncld')
 
     case default
 
@@ -365,6 +441,40 @@
 
  end subroutine calc_cldfraction
 
+!=================================================================================================================
+ subroutine cal_mynncld(cldfrac,qc,qi,qc_bl,qi_bl,its,ite,jts,jte,kts,kte)
+!=================================================================================================================
+
+!input arguments:
+ integer,intent(in):: its,ite,jts,jte,kts,kte
+ real(kind=RKIND),intent(inout),dimension(ims:ime,kms:kme,jms:jme):: qc,qi
+ real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: qc_bl,qi_bl
+
+ real(kind=RKIND),intent(in),dimension(ims:ime,kms:kme,jms:jme):: cldfrac
+
+!local variables:
+ integer:: i,j,k
+
+ real(kind=RKIND),parameter:: qc_thresh = 1.e-06
+ real(kind=RKIND),parameter:: qi_thresh = 1.e-08
+ real(kind=RKIND),parameter:: cld_thresh = 1.e-04
+
+ do j = jts,jte
+ do k = kts,kte
+ do i = its,ite
+    if (qc(i,k,j) < qc_thresh .AND. cldfrac(i,k,j) > cld_thresh) THEN
+ !      call mpas_log_write("Adding in cldfra_bl to qc at $i,$i,$i", intArgs=(/i,j,k/))
+       qc(i,k,j)=qc(i,k,j) + qc_bl(i,k,j)*cldfrac(i,k,j)
+    endif
+    if (qi(i,k,j) < qi_thresh .AND. cldfrac(i,k,j) > cld_thresh) THEN
+ !      call mpas_log_write("Adding in cldfra_bl to qi at $i,$i,$i", intArgs=(/i,j,k/))
+       qi(i,k,j)=qi(i,k,j) + qi_bl(i,k,j)*cldfrac(i,k,j)
+    endif
+ enddo
+ enddo
+ enddo
+
+ end subroutine cal_mynncld
 !=================================================================================================================
  end module mpas_atmphys_driver_cloudiness
 !=================================================================================================================

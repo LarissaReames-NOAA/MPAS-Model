@@ -169,7 +169,6 @@
        if(.not.allocated(rqnifablten_p)) allocate(rqnifablten_p(ims:ime,kms:kme,jms:jme))
        if(.not.allocated(rqnbcablten_p)) allocate(rqnbcablten_p(ims:ime,kms:kme,jms:jme)) 
 
-       if(.not.allocated(sm3d_p)     ) allocate(sm3d_p(ims:ime,kms:kme,jms:jme)     )
        if(.not.allocated(exch_h_p)   ) allocate(exch_h_p(ims:ime,kms:kme,jms:jme)   ) 
        if(.not.allocated(exch_m_p)   ) allocate(exch_m_p(ims:ime,kms:kme,jms:jme)   )
        if(.not.allocated(qc_bl_p)    ) allocate(qc_bl_p(ims:ime,kms:kme,jms:jme)    )
@@ -357,7 +356,7 @@
  real(kind=RKIND),pointer:: len_disp
  real(kind=RKIND),dimension(:),pointer  :: meshDensity
  real(kind=RKIND),dimension(:),pointer  :: ch,qsfc,qcg,rmol,skintemp
- real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl
+ real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,sm3d,tke_pbl,qke_adv,el_pbl,cldfra_bl,qi_bl,qc_bl
 
 !local pointers for MYJ scheme:
  real(kind=RKIND),dimension(:),pointer   :: chlowq,thz0,qz0,uz0,vz0,ct,akhs,akms,lh,mixht
@@ -441,20 +440,24 @@
        call mpas_pool_get_config(configs,'config_len_disp',len_disp)
        call mpas_pool_get_array(mesh,'meshDensity',meshDensity)
 
-       call mpas_pool_get_array(sfc_input   ,'skintemp',skintemp)
-       call mpas_pool_get_array(diag_physics,'ch'      ,ch      )
-       call mpas_pool_get_array(diag_physics,'qcg'     ,qcg     )
-       call mpas_pool_get_array(diag_physics,'qsfc'    ,qsfc    )
-       call mpas_pool_get_array(diag_physics,'rmol'    ,rmol    )
+       call mpas_pool_get_array(sfc_input   ,'skintemp' ,skintemp)
+       call mpas_pool_get_array(diag_physics,'ch'       ,ch      )
+       call mpas_pool_get_array(diag_physics,'qcg'      ,qcg     )
+       call mpas_pool_get_array(diag_physics,'qsfc'     ,qsfc    )
+       call mpas_pool_get_array(diag_physics,'rmol'     ,rmol    )
 
-       call mpas_pool_get_array(diag_physics,'el_pbl' ,el_pbl   )
-       call mpas_pool_get_array(diag_physics,'cov'    ,cov      )
-       call mpas_pool_get_array(diag_physics,'qke'    ,qke      )
-       call mpas_pool_get_array(diag_physics,'qke_adv',qke_adv  )
-       call mpas_pool_get_array(diag_physics,'qsq'    ,qsq      )
-       call mpas_pool_get_array(diag_physics,'tsq'    ,tsq      )
-       !call mpas_pool_get_array(diag_physics,'tke_pbl',tke_pbl  )
-       call mpas_pool_get_array(diag_physics,'sh3d'   ,sh3d     )
+       call mpas_pool_get_array(diag_physics,'el_pbl'   ,el_pbl   )
+       call mpas_pool_get_array(diag_physics,'cov'      ,cov      )
+       call mpas_pool_get_array(diag_physics,'qke'      ,qke      )
+       call mpas_pool_get_array(diag_physics,'qke_adv'  ,qke_adv  )
+       call mpas_pool_get_array(diag_physics,'qsq'      ,qsq      )
+       call mpas_pool_get_array(diag_physics,'tsq'      ,tsq      )
+       !call mpas_pool_get_array(diag_physics,'tke_pbl ',tke_pbl  )
+       call mpas_pool_get_array(diag_physics,'sh3d'     ,sh3d     )
+       call mpas_pool_get_array(diag_physics,'sm3d'     , sm3d    )
+       call mpas_pool_get_array(diag_physics,'cldfra_bl',cldfra_bl)
+       call mpas_pool_get_array(diag_physics,'qc_bl'    ,qc_bl    )
+       call mpas_pool_get_array(diag_physics,'qi_bl'    ,qi_bl    )
 
        do j = jts,jte
        do i = its,ite
@@ -480,14 +483,22 @@
           !tkepbl_p(i,k,j)   = tke_pbl(k,i)
           qkeadv_p(i,k,j)   = qke_adv(k,i)
           sh3d_p(i,k,j)     = sh3d(k,i)
+          cldfra_bl_p(i,k,j)= cldfra_bl(k,i)
+          qi_bl_p(i,k,j)    = qi_bl(k,i)
+          qc_bl_p(i,k,j)    = qc_bl(k,i)
+
           rniblten_p(i,k,j) = 0._RKIND
 
           !... outputs:
-          dqke_p(i,k,j)   = 0._RKIND
-          qbuoy_p(i,k,j)  = 0._RKIND
-          qdiss_p(i,k,j)  = 0._RKIND
-          qshear_p(i,k,j) = 0._RKIND
-          qwt_p(i,k,j)    = 0._RKIND
+          dqke_p(i,k,j)        = 0._RKIND
+          qbuoy_p(i,k,j)       = 0._RKIND
+          qdiss_p(i,k,j)       = 0._RKIND
+          qshear_p(i,k,j)      = 0._RKIND
+          qwt_p(i,k,j)         = 0._RKIND
+          rqncblten_p(i,k,j)   = 0.0_RKIND
+          rqnwfablten_p(i,k,j) = 0.0_RKIND
+          rqnifablten_p(i,k,j) = 0.0_RKIND
+          rqnbcablten_p(i,k,j) = 0.0_RKIND
        enddo
        enddo
        enddo
@@ -592,7 +603,7 @@
 !local pointers for MYNN scheme:
  real(kind=RKIND),dimension(:),pointer  :: delta,wstar
  real(kind=RKIND),dimension(:,:),pointer:: cov,qke,qsq,tsq,sh3d,tke_pbl,qke_adv,el_pbl,dqke,qbuoy, &
-                                           qdiss,qshear,qwt
+                                           qdiss,qshear,qwt,cldfra_bl,qi_bl,qc_bl
 
 !local pointers for MYJ scheme:
  real(kind=RKIND),dimension(:),pointer   :: thz0,qz0,uz0,vz0,akhs,akms,ct,mixht,qsfc,ust,znt
@@ -656,21 +667,23 @@
        enddo
 
     case("bl_mynn")
-       call mpas_pool_get_array(diag_physics,'el_pbl'  ,el_pbl  )
-       call mpas_pool_get_array(diag_physics,'cov'     ,cov     )
-       call mpas_pool_get_array(diag_physics,'qke'     ,qke     )
-       call mpas_pool_get_array(diag_physics,'qke_adv' ,qke_adv )
-       call mpas_pool_get_array(diag_physics,'qsq'     ,qsq     )
-       call mpas_pool_get_array(diag_physics,'tsq'     ,tsq     )
-       !call mpas_pool_get_array(diag_physics,'tke_pbl' ,tke_pbl )
-       call mpas_pool_get_array(diag_physics,'sh3d'    ,sh3d    )
-       call mpas_pool_get_array(diag_physics,'dqke'    ,dqke    )
-       call mpas_pool_get_array(diag_physics,'qbuoy'   ,qbuoy   )
-       call mpas_pool_get_array(diag_physics,'qdiss'   ,qdiss   )
-       call mpas_pool_get_array(diag_physics,'qshear'  ,qshear  )
-       call mpas_pool_get_array(diag_physics,'qwt'     ,qwt     )
-       call mpas_pool_get_array(tend_physics,'rniblten',rniblten)
-
+       call mpas_pool_get_array(diag_physics,'el_pbl'  , el_pbl   )
+       call mpas_pool_get_array(diag_physics,'cov'     , cov      )
+       call mpas_pool_get_array(diag_physics,'qke'     , qke      )
+       call mpas_pool_get_array(diag_physics,'qke_adv' , qke_adv  )
+       call mpas_pool_get_array(diag_physics,'qsq'     , qsq      )
+       call mpas_pool_get_array(diag_physics,'tsq'     , tsq      )
+       !call mpas_pool_get_array(diag_physics,'tke_pbl'  ,tke_pbl  )
+       call mpas_pool_get_array(diag_physics,'sh3d'    , sh3d     )
+       call mpas_pool_get_array(diag_physics,'dqke'    , dqke     )
+       call mpas_pool_get_array(diag_physics,'qbuoy'   , qbuoy    )
+       call mpas_pool_get_array(diag_physics,'qdiss'   , qdiss    )
+       call mpas_pool_get_array(diag_physics,'qshear'  , qshear   )
+       call mpas_pool_get_array(diag_physics,'qwt'     , qwt      )
+       call mpas_pool_get_array(tend_physics,'rniblten', rniblten )
+       call mpas_pool_get_array(diag_physics,'cldfra_bl',cldfra_bl)
+       call mpas_pool_get_array(diag_physics,'qc_bl'    ,qc_bl    )
+       call mpas_pool_get_array(diag_physics,'qi_bl'    ,qi_bl    )
        do j = jts,jte
        do k = kts,kte
        do i = its,ite
@@ -688,6 +701,9 @@
           qdiss(k,i)    = qdiss_p(i,k,j)
           qshear(k,i)   = qshear_p(i,k,j)
           qwt(k,i)      = qwt_p(i,k,j)
+          cldfra_bl(k,i)= cldfra_bl_p(i,k,j)
+          qc_bl(k,i)    = qc_bl_p(i,k,j)
+          qi_bl(k,i)    = qi_bl_p(i,k,j)
 
           rniblten(k,i) = rniblten_p(i,k,j)
        enddo
@@ -759,6 +775,7 @@
 !local pointers:
  logical,pointer:: config_do_restart
  character(len=StrKIND),pointer:: pbl_scheme
+ integer,pointer:: icloud_bl
 
 !local variables:
  integer:: initflag
@@ -767,7 +784,7 @@
 !CCPP-compliant flags:
  character(len=StrKIND):: errmsg
  integer:: errflg
-
+ integer, pointer :: indexToCellID(:)
 !-----------------------------------------------------------------------------------------------------------------
 !call mpas_log_write('')
 !call mpas_log_write('--- enter subroutine driver_pbl:')
@@ -778,7 +795,9 @@
 
  call mpas_pool_get_config(configs,'config_do_restart',config_do_restart)
  call mpas_pool_get_config(configs,'config_pbl_scheme',pbl_scheme       )
+ call mpas_pool_get_config(configs,'config_icloud_bl' ,icloud_bl        )
 
+ call mpas_pool_get_array(mesh,'indexToCellID',indexToCellID)
 !copy MPAS arrays to local arrays:
  call pbl_from_MPAS(configs,mesh,sfc_input,diag_physics,tend_physics,its,ite)
 
@@ -864,8 +883,7 @@
                  flag_qnbca = flag_qnbca ,                                                 &
                  ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde   , &
                  ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme   , &
-                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte     &
-                            )
+                 its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte    ) 
        call mpas_timer_stop('MYNN_pbl')
 
     case("bl_myj")

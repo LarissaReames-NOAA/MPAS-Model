@@ -2276,7 +2276,7 @@
                 <nml_option name="config_radt_cld_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
                      description="configuration for calculation of horizontal cloud fraction"
-                     possible_values="`suite',`cld_fraction',`cld_incidence'"/>
+                     possible_values="`suite',`cld_fraction',`cld_incidence',`cld_fraction_thompson',`cld_fraction_mynn'"/>
 
                 <nml_option name="config_radt_lw_scheme" type="character" default_value="suite" in_defaults="false"
                      units="-"
@@ -2337,6 +2337,11 @@
                      units="s"
                      description="Relaxation time to initial values in 1-d OML"
                      possible_values="Non-negative real values"/>
+
+		<nml_option name="config_icloud_bl" type="integer" default_value="0" in_defaults="false"
+		     units=""
+		     description="Use MYNN Sub-grid-scale clouds in radiation. Valid only for config_pbl_scheme='bl_mynn'."
+		     possible_values="0,1"/>
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
@@ -2614,6 +2619,18 @@
                      description="TKE vertical distribution"
                      packages="bl_mynn_in"/>
 
+		 <var name="cldfra_bl" type="real" dimensions="nVertLevels nCells Time" units=""
+                     description="Cloud fraction with SGS clouds added in"
+                     packages="bl_mynn_in"/>
+
+                 <var name="qi_bl" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1}"
+                     description="Ice mixing ratio with SGS clouds added in"
+                     packages="bl_mynn_in"/>
+
+                 <var name="qc_bl" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1}"
+                     description="Cloud water mixing ratio with SGS clouds added in"
+                     packages="bl_mynn_in"/>
+
 		<!-- MYJ PBL SCHEME: -->
 		<var name="chlowq" type="real" dimensions="nCells Time" units=""
 		     description=""
@@ -2757,6 +2774,10 @@
 
                 <var name="sh3d" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                      description="stability function for heat"
+                     packages="bl_mynn_in"/>
+
+                <var name="sm3d" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="stability function for moisture"
                      packages="bl_mynn_in"/>
 	
 		<!-- ... MYJ: -->

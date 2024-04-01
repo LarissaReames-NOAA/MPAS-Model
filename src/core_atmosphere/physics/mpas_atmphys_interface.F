@@ -355,6 +355,7 @@
     surface_pressure(i) = 0.5*gravity*(zgrid(2,i)-zgrid(1,i)) &
                     * (rho1 - 0.5*(rho2-rho1)*tem1/(tem1+tem2))
     surface_pressure(i) = surface_pressure(i) + pressure_p(1,i) + pressure_b(1,i)
+    if (surface_pressure(i) < pres_p(i,1,j)) print*, "SFCP<P", zgrid(2,i), zgrid(1,i), rho1, rho2, tem1, tem2
  enddo
 
  do k = kts,kte
