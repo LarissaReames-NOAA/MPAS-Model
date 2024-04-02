@@ -464,11 +464,11 @@
  do i = its,ite
     if (qc(i,k,j) < qc_thresh .AND. cldfrac(i,k,j) > cld_thresh) THEN
  !      call mpas_log_write("Adding in cldfra_bl to qc at $i,$i,$i", intArgs=(/i,j,k/))
-       qc(i,k,j)=qc(i,k,j) + qc_bl(i,k,j)*cldfrac(i,k,j)
+       qc(i,k,j)=qc(i,k,j) + qc_bl(i,k,j)
     endif
     if (qi(i,k,j) < qi_thresh .AND. cldfrac(i,k,j) > cld_thresh) THEN
  !      call mpas_log_write("Adding in cldfra_bl to qi at $i,$i,$i", intArgs=(/i,j,k/))
-       qi(i,k,j)=qi(i,k,j) + qi_bl(i,k,j)*cldfrac(i,k,j)
+       qi(i,k,j)=qi(i,k,j) + qi_bl(i,k,j)
     endif
  enddo
  enddo
