@@ -461,7 +461,6 @@ module init_atm_hinterp
       icx = ceiling(xx)
       ify = floor(yy)
       icy = ceiling(yy)
-
       ! First, make sure that the point is contained in the source array
       if (ifx < start_x .or. icx > end_x .or. &
           ify < start_y .or. icy > end_y) then
@@ -513,7 +512,7 @@ module init_atm_hinterp
                             cxfy * array(icx, ify, izz) + &
                             cxcy * array(icx, icy, izz) ) / (fxfy + fxcy + cxfy + cxcy)
       end if
- 
+      call mpas_log_write('In four_pt ifx $i icx $i ify $i icy $i AVG $r', intArgs=(/ifx,icx,ify,icy/),realArgs=(/four_pt_average/)) 
    end function four_pt_average
 
 

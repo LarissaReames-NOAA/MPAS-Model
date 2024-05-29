@@ -1311,6 +1311,7 @@ MODULE init_atm_llxy
       i = proj%hemi * i  
       j = proj%hemi * j
 
+
       RETURN
    END SUBROUTINE llij_lc
 
@@ -1484,11 +1485,16 @@ MODULE init_atm_llxy
       i = deltalon/proj%loninc
       j = deltalat/proj%latinc
 
-      if (i <= 0.)              i = i + 360./proj%loninc
-      if (i > 360./proj%loninc) i = i - 360./proj%loninc
-
+!LJR -- moved this block above the check for i value as done in WPS; incorrect otherwise
       i = i + proj%knowni
       j = j + proj%knownj
+
+      if (i <= 0.) then         i = i + 360./proj%loninc
+      if (i > 360./proj%loninc) i = i - 360./proj%loninc
+
+!      i = i + proj%knowni
+!      j = j + proj%knownj
+
 
    END SUBROUTINE llij_cyl
 
@@ -1550,6 +1556,7 @@ MODULE init_atm_llxy
 
       if (abs(proj%lat0) /= 90. .and. .not.global_domain) then
          call rotate_coords(proj%lat1,proj%lon1,comp_lat,comp_lon,proj%lat0,proj%lon0,proj%stdlon,-1)
+         comp_lon = comp_lon + proj%stdlon
          proj%lat1 = comp_lat
          proj%lon1 = comp_lon
       end if
@@ -1572,6 +1579,7 @@ MODULE init_atm_llxy
       ! Convert geographic to computational lat/lon
       if (abs(proj%lat0) /= 90.) then
          call rotate_coords(lat,lon,comp_lat,comp_lon,proj%lat0,proj%lon0,proj%stdlon,-1)
+         comp_lon = comp_lon + proj%stdlon
       else
          comp_lat = lat
          comp_lon = lon
@@ -1579,7 +1587,6 @@ MODULE init_atm_llxy
 
       ! Convert computational lat/lon to i/j
       call llij_cyl(comp_lat, comp_lon, proj, i, j)
-
    END SUBROUTINE llij_cassini
 
 
@@ -1600,6 +1607,7 @@ MODULE init_atm_llxy
 
       ! Convert computational to geographic lat/lon
       if (abs(proj%lat0) /= 90.) then
+         comp_lon = comp_lon - proj%stdlon
          call rotate_coords(comp_lat,comp_lon,lat,lon,proj%lat0,proj%lon0,proj%stdlon,1)
       else
          lat = comp_lat
@@ -1635,7 +1643,6 @@ MODULE init_atm_llxy
       lam_0  = lon_0  * rad_per_deg
       rlat = ilat * rad_per_deg
       rlon = ilon * rad_per_deg
-
       IF (PRESENT(direction) .AND. (direction < 0)) THEN
          ! The equations are exactly the same except for one small difference
          ! with respect to longitude ...
@@ -1663,6 +1670,7 @@ MODULE init_atm_llxy
          IF (olon <=  180.) EXIT
          olon = olon - 360.
       END DO
+
 
    END SUBROUTINE rotate_coords
 
