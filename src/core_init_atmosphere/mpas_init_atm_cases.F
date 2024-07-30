@@ -5162,7 +5162,7 @@ call mpas_log_write('Done with soil consistency check')
 
          xlonc = rad_per_deg * xlonc
          call mpas_log_write(" rotating velocities ")
-         call rotate_velocities(u_fg, v_fg, lonEdge, cone, xlonc, nfglevels_actual, nEdges, field % iproj)
+         call rotate_velocities(u_fg, v_fg, lonEdge, latEdge, cone, xlonc, nfglevels_actual, nEdges, field % iproj, proj)
 
       else
          call mpas_log_write(" is_wind_grid_rel is false ")
@@ -6326,7 +6326,7 @@ call mpas_log_write('Done with soil consistency check')
 
          xlonc = rad_per_deg * xlonc
          call mpas_log_write(" rotating velocities ")
-         call rotate_velocities(u_fg, v_fg, lonEdge, cone, xlonc, nfglevels_actual, nEdges, field % iproj)
+         call rotate_velocities(u_fg, v_fg, lonEdge, latEdge, cone, xlonc, nfglevels_actual, nEdges, field % iproj, proj)
 
       else
          call mpas_log_write(" is_wind_grid_rel is false ")
@@ -8328,13 +8328,17 @@ call mpas_log_write('Done with soil consistency check')
 
     END function calcnfromq
 
-    subroutine rotate_velocities( u, v, lonEdge, cone, xlonc, levels, nEdges, iproj )
+    subroutine rotate_velocities( u, v, lonEdge, latEdge,cone, xlonc, levels, nEdges, iproj, proj )
 
-    use init_atm_llxy, only : PROJ_LC
+    use init_atm_llxy, only : PROJ_LC, PROJ_CASSINI,  &
+                              latlon_to_ij, ij_to_latlon, &
+                              RAD_PER_DEG, DEG_PER_RAD, &
+                              proj_info
 
     implicit none
 
-    real (kind=RKIND), dimension(:) :: lonEdge
+    type(proj_info) :: proj
+    real (kind=RKIND), dimension(:) :: lonEdge, latEdge
     real (kind=RKIND), dimension(:,:) :: u, v
     real (kind=RKIND) :: cone, xlonc
     integer :: levels, nEdges, iproj
@@ -8342,24 +8346,46 @@ call mpas_log_write('Done with soil consistency check')
     integer :: iEdge, iLevel
     real (kind=RKIND) :: rlon, cos_rlon, sin_rlon, twopii
     real (kind=RKIND), dimension(levels) :: u_in, v_in
-
+    real :: diff_lon, diff_lat, x_v, y_v, xlat_p1, xlon_p1, xlat_m1, xlon_m1
     twopii = 4.0*asin(1.0)
     ! mpas longitudes are 0 - 2*pi, adjust if xlonc is west (negative)
+    xlonc_save = xlonc
     if (xlonc < 0) xlonc = xlonc + twopii
 
     do iEdge=1, nEdges
+      
       rlon = lonEdge(iEdge) - xlonc
+   
       if (iproj == PROJ_LC) then
          cos_rlon = cos(cone*rlon)
          sin_rlon = sin(cone*rlon)
-      else
+      else if ( iproj == PROJ_CASSINI) then
+         call latlon_to_ij ( proj, latEdge(iEdge)*deg_per_rad,  &
+                             lonEdge(iEdge)*deg_per_rad, x_v, y_v )
+         call ij_to_latlon ( proj , &
+                             x_v, y_v + 0.1 , xlat_p1 , xlon_p1 )
+         call ij_to_latlon ( proj , &
+                             x_v, y_v - 0.1 , xlat_m1 , xlon_m1 )
+         diff_lon = xlon_p1-xlon_m1
+         if (diff_lon > 180.) then
+            diff_lon = diff_lon - 360.
+         else if (diff_lon < -180.) then
+            diff_lon = diff_lon + 360.
+         end if
+
+         diff_lat = xlat_p1-xlat_m1
+         rlon =-atan2(   -cos(latEdge(iEdge)) * diff_lon*rad_per_deg,   &
+                                         diff_lat*rad_per_deg    &
+                      )
+         cos_rlon = cos(rlon)
+         sin_rlon = sin(rlon)
+      else 
          cos_rlon = cos(rlon)
          sin_rlon = sin(rlon)
       endif
 
       u_in(:) = u(:,iEdge)
       v_in(:) = v(:,iEdge)
-
       do iLevel=1, levels
         u(iLevel,iEdge) =   cos_rlon*u_in(iLevel) + sin_rlon*v_in(iLevel)
         v(iLevel,iEdge) = - sin_rlon*u_in(iLevel) + cos_rlon*v_in(iLevel)
